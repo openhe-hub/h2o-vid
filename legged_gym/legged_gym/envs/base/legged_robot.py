@@ -2142,12 +2142,55 @@ class LeggedRobot(BaseTask):
                 # motion_res = self._get_state_from_motionlib_cache(self.motion_ids, motion_times, offset= offset)
                 motion_res = self._get_state_from_motionlib_cache_trimesh(self.motion_ids, motion_times, offset= offset)
                 
-                self.root_states[env_ids, :3] = motion_res['root_pos'][env_ids]
+                ########
+                def quat_inv(q):
+                    return torch.tensor([-q[0], -q[1], -q[2], q[3]], device='cuda:0')
+            
+                def quat_mul(q1, q2):
+                    x1, y1, z1, w1 = q1
+                    x2, y2, z2, w2 = q2
+                    return torch.tensor([
+                        w1*x2 + x1*w2 + y1*z2 - z1*y2,  
+                        w1*y2 - x1*z2 + y1*w2 + z1*x2,  
+                        w1*z2 + x1*y2 - y1*x2 + z1*w2,  
+                        w1*w2 - x1*x2 - y1*y2 - z1*z2   
+                    ], device='cuda:0')
+                
+                def quat_rotate(q, v):
+                    q_conj = quat_inv(q)
+                    v_quat = torch.tensor([v[0], v[1], v[2], 0.0]) 
+                    v_rotated = quat_mul(quat_mul(q, v_quat), q_conj)
+                    return v_rotated[:3]  
+                
+                def axis_angle_to_quat(axis, angle_rad):
+                    axis = torch.tensor(axis, dtype=torch.float32)
+                    axis = axis / axis.norm()
+                    half_angle = angle_rad / 2
+                    sin_half = torch.sin(half_angle)
+                    cos_half = torch.cos(half_angle)
+                    xyz = axis * sin_half
+                    return torch.cat([xyz, cos_half.unsqueeze(0)])
+                
+                fix_quat = quat_inv([0.2824,  0.7785, -0.0737, -0.5557])
+                # print(motion_res['root_pos'][env_ids][0][-1])
+                # motion_res['root_rot'][env_ids][0] = quat_mul(fix_quat, motion_res['root_rot'][env_ids][0]).copy()
+                # motion_res['root_pos'][env_ids][0] = quat_rotate(fix_quat, motion_res['root_pos'][env_ids][0]).copy()
+                # motion_res['root_vel'][env_ids][0] = quat_rotate(fix_quat, motion_res['root_vel'][env_ids][0]).copy()
+                # motion_res['root_ang_vel'][env_ids][0] = quat_rotate(fix_quat,motion_res['root_ang_vel'][env_ids][0]).copy()
+                
+                # motion_res["root_pos"][env_ids][:, -1] += 2.0 
+                
+                # print(motion_res['root_pos'][env_ids][0][-1])
+                
+                # import time; time.sleep(10)
+                ##########
+                
+                self.root_states[env_ids, :3] = quat_rotate(fix_quat, motion_res['root_pos'][env_ids][0]).unsqueeze(0)
                 # print("root",motion_res['root_pos'][env_ids])
                 # self.root_states[env_ids, 2] += 0.03 # in case under the terrain
-                self.root_states[env_ids, 2] += 0.04 # in case under the terrain
+                # self.root_states[env_ids, 2] += 0.04 # in case under the terrain
 
-                # self.root_states[env_ids, 0] += 5.0 # in case under the terrain
+                self.root_states[env_ids, 2] += 4.0 # in case under the terrain
                 # self.root_states[env_ids, 1] += 5.0 # in case under the terrain
                 if self.cfg.domain_rand.born_offset:
                     rand_num = np.random.rand()
@@ -2157,9 +2200,19 @@ class LeggedRobot(BaseTask):
                         # randomize_distance = torch.clamp(randomize_distance,self.cfg.domain_rand.born_offset_range[0], self.cfg.domain_rand.born_offset_range[1])
                         self.root_states[env_ids, :2] += randomize_distance
                         # self.root_states[env_ids, :2] += torch_rand_float(self.cfg.domain_rand.born_offset_range[0], self.cfg.domain_rand.born_offset_range[1], (len(env_ids), 2), device=self.device)
-                self.root_states[env_ids, 3:7] = motion_res['root_rot'][env_ids]
-                self.root_states[env_ids, 7:10] = motion_res['root_vel'][env_ids] # ZL: use random velicty initation should be more robust? 
-                self.root_states[env_ids, 10:13] = motion_res['root_ang_vel'][env_ids]
+                self.root_states[env_ids, 3:7] = quat_mul(fix_quat, motion_res['root_rot'][env_ids][0]).unsqueeze(0)
+                self.root_states[env_ids, 7:10] = quat_rotate(fix_quat, motion_res['root_vel'][env_ids][0]).unsqueeze(0) # ZL: use random velicty initation should be more robust? 
+                self.root_states[env_ids, 10:13] = quat_rotate(fix_quat,motion_res['root_ang_vel'][env_ids][0]).unsqueeze(0)
+                
+                # print(motion_res['root_rot'][env_ids].shape)
+                # print(quat_mul(fix_quat, motion_res['root_rot'][env_ids][0]).unsqueeze(0).shape)
+                
+                # motion_res['root_rot'][env_ids, 3:7] = quat_mul(fix_quat, motion_res['root_rot'][env_ids][0]).unsqueeze(0)
+                # motion_res['root_pos'][env_ids, :3] = 
+                # motion_res['root_vel'][env_ids, 7:10] = 
+                # motion_res['root_ang_vel'][env_ids, 10:13] = 
+                
+                print(self.root_states[env_ids])
 
 
                 if self.cfg.domain_rand.born_heading_randomization:
@@ -2225,15 +2278,14 @@ class LeggedRobot(BaseTask):
         # self.root_states[env_ids, 10:13] = torch_rand_float(-self.cfg.init_state.max_angvel, self.cfg.init_state.max_angvel, (len(env_ids), 3), device=self.device) # [7:10]: lin vel, [10:13]: ang vel
         env_ids_int32 = env_ids.to(dtype=torch.int32)
         
-        
         # env_ids_int32 = torch.arange(self.num_envs).to(dtype=torch.int32).cuda()
         env_ids_int32 = torch.arange(self.num_envs).to(dtype=torch.int32).to(self.device)
-        
-        # print(self.root_states)
         
         self.gym.set_dof_state_tensor_indexed(self.sim,
                                               gymtorch.unwrap_tensor(self.dof_state),
                                               gymtorch.unwrap_tensor(env_ids_int32), len(env_ids_int32))
+        
+
         
         self.gym.set_actor_root_state_tensor_indexed(self.sim,
                                                      gymtorch.unwrap_tensor(self.root_states),

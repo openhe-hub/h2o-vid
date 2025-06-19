@@ -51,7 +51,7 @@ class MotionLibH1Video(MotionLibBase):
         super().__init__(motion_file=motion_file, device=device, fix_height=fix_height, masterfoot_conifg=masterfoot_conifg, min_length=min_length, im_eval=im_eval, multi_thread=multi_thread, sim_timestep = sim_timestep)
         self.mesh_parsers = Humanoid_Batch(extend_hand = extend_hand, extend_head = extend_head, mjcf_file=mjcf_file)
         self.fix_quat = None
-        self.fix_z_direction = 2.0 
+        self.fix_z_direction = 0.0 
         return
     
     @staticmethod
