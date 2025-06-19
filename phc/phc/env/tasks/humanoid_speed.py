@@ -94,9 +94,9 @@ class HumanoidSpeed(humanoid_amp_task.HumanoidAMPTask):
         self._marker_rot[:, -1] = 1.0
         
 
-        self.gym.set_actor_root_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(self._root_states),
-                                                     gymtorch.unwrap_tensor(self._marker_actor_ids),
-                                                     len(self._marker_actor_ids))
+        # self.gym.set_actor_root_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(self._root_states),
+        #                                              gymtorch.unwrap_tensor(self._marker_actor_ids),
+        #                                              len(self._marker_actor_ids))
         return
 
     def _create_envs(self, num_envs, spacing, num_per_row):

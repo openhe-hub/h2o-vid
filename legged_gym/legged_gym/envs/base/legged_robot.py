@@ -25,6 +25,7 @@ from .legged_robot_config import LeggedRobotCfg
 from .lpf import ActionFilterButter, ActionFilterExp, ActionFilterButterTorch
 
 from phc.utils.motion_lib_h1 import MotionLibH1
+from phc.utils.motion_lib_h1_vid import MotionLibH1Video
 from phc.learning.network_loader import load_mcp_mlp
 from smpl_sim.poselib.skeleton.skeleton3d import SkeletonTree
 from termcolor import colored
@@ -2204,7 +2205,7 @@ class LeggedRobot(BaseTask):
                 self.root_states[env_ids, 3:7] = motion_res['root_rot'][env_ids]
                 self.root_states[env_ids, 7:10] = motion_res['root_vel'][env_ids] # ZL: use random velicty initation should be more robust? 
                 self.root_states[env_ids, 10:13] = motion_res['root_ang_vel'][env_ids]
-                
+                              
                 self._rigid_body_pos[env_ids] = motion_res['rg_pos'][env_ids]
                 self._rigid_body_rot[env_ids] = motion_res['rb_rot'][env_ids]
                 self._rigid_body_vel[env_ids] =   motion_res['body_vel'][env_ids]
@@ -2227,6 +2228,9 @@ class LeggedRobot(BaseTask):
         
         # env_ids_int32 = torch.arange(self.num_envs).to(dtype=torch.int32).cuda()
         env_ids_int32 = torch.arange(self.num_envs).to(dtype=torch.int32).to(self.device)
+        
+        # print(self.root_states)
+        
         self.gym.set_dof_state_tensor_indexed(self.sim,
                                               gymtorch.unwrap_tensor(self.dof_state),
                                               gymtorch.unwrap_tensor(env_ids_int32), len(env_ids_int32))
@@ -3132,6 +3136,7 @@ class LeggedRobot(BaseTask):
         motion_path = self.cfg.motion.motion_file.format(LEGGED_GYM_ROOT_DIR=LEGGED_GYM_ROOT_DIR)
         skeleton_path = self.cfg.motion.skeleton_file.format(LEGGED_GYM_ROOT_DIR=LEGGED_GYM_ROOT_DIR)
         self._motion_lib = MotionLibH1(motion_file=motion_path, device=self.device, masterfoot_conifg=None, fix_height=False,multi_thread=False,mjcf_file=skeleton_path, extend_head=self.cfg.motion.extend_head) #multi_thread=True doesn't work
+        # self._motion_lib = MotionLibH1Video(motion_file=motion_path, device=self.device, masterfoot_conifg=None, fix_height=False,multi_thread=False,mjcf_file=skeleton_path, extend_head=self.cfg.motion.extend_head) #multi_thread=True doesn't work
         sk_tree = SkeletonTree.from_mjcf(skeleton_path)
         
         self.skeleton_trees = [sk_tree] * self.num_envs

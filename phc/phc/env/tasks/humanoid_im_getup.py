@@ -92,9 +92,9 @@ class HumanoidImGetup(HumanoidIm):
         self._humanoid_root_states[env_ids] = root_states
 
         env_ids_int32 = self._humanoid_actor_ids[env_ids]
-        self.gym.set_actor_root_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(self._root_states), gymtorch.unwrap_tensor(env_ids_int32), len(env_ids_int32))
+        # self.gym.set_actor_root_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(self._root_states), gymtorch.unwrap_tensor(env_ids_int32), len(env_ids_int32))
         # _dof_state: from the currently simulated states
-        self.gym.set_dof_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(torch.zeros_like(self._dof_state)), gymtorch.unwrap_tensor(env_ids_int32), len(env_ids_int32))
+        # self.gym.set_dof_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(torch.zeros_like(self._dof_state)), gymtorch.unwrap_tensor(env_ids_int32), len(env_ids_int32))
 
         rand_actions = np.random.uniform(-0.5, 0.5, size=[self.num_envs, self.get_dof_action_size()])
         rand_actions = to_torch(rand_actions, device=self.device)

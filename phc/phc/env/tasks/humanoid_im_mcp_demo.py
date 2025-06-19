@@ -121,7 +121,7 @@ class HumanoidImMCPDemo(humanoid_im_mcp.HumanoidImMCP):
         # self._marker_pos[:] = show_points[:, :self._marker_pos.shape[1]]
         # ######### Heading debug #######
 
-        self.gym.set_actor_root_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(self._root_states), gymtorch.unwrap_tensor(self._marker_actor_ids), len(self._marker_actor_ids))
+        # self.gym.set_actor_root_state_tensor_indexed(self.sim, gymtorch.unwrap_tensor(self._root_states), gymtorch.unwrap_tensor(self._marker_actor_ids), len(self._marker_actor_ids))
 
         return
 

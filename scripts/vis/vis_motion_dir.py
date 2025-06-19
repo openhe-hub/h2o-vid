@@ -267,8 +267,8 @@ while not gym.query_viewer_has_closed(viewer):
     root_ang_vel = torch.zeros((1, 3)).cuda()
     
     root_states = torch.cat([root_pos, root_rot, root_vel, root_ang_vel], dim=-1).repeat(num_envs, 1)
-    gym.set_actor_root_state_tensor(sim, gymtorch.unwrap_tensor(root_states))
-    gym.set_actor_root_state_tensor_indexed(sim, gymtorch.unwrap_tensor(root_states), gymtorch.unwrap_tensor(env_ids), len(env_ids))
+    # gym.set_actor_root_state_tensor(sim, gymtorch.unwrap_tensor(root_states))
+    # gym.set_actor_root_state_tensor_indexed(sim, gymtorch.unwrap_tensor(root_states), gymtorch.unwrap_tensor(env_ids), len(env_ids))
 
     gym.refresh_actor_root_state_tensor(sim)
 

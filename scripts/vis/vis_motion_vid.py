@@ -21,7 +21,7 @@ import joblib
 import numpy as np
 from isaacgym import gymapi, gymutil, gymtorch
 import torch
-from phc.utils.motion_lib_h1 import MotionLibH1
+from phc.utils.motion_lib_h1_vid import MotionLibH1Video
 from smpl_sim.poselib.skeleton.skeleton3d import SkeletonTree
 from phc.utils.flags import flags
 
@@ -53,7 +53,7 @@ asset_descriptors = [
 ]
 sk_tree = SkeletonTree.from_mjcf(h1_xml)
 
-motion_file = "data/h1/dance_db.pkl"
+motion_file = "data/h1/IMG_9732.pkl"
 if os.path.exists(motion_file):
     print(f"loading {motion_file}")
 else:
@@ -174,7 +174,7 @@ gym.prepare_sim(sim)
 
 device = (torch.device("cuda", index=0) if torch.cuda.is_available() else torch.device("cpu"))
 
-motion_lib = MotionLibH1(motion_file=motion_file, device=device, masterfoot_conifg=None, fix_height=False, multi_thread=False, mjcf_file=h1_xml)
+motion_lib = MotionLibH1Video(motion_file=motion_file, device=device, masterfoot_conifg=None, fix_height=False, multi_thread=False, mjcf_file=h1_xml)
 num_motions = 1
 curr_start = 0
 motion_lib.load_motions(skeleton_trees=[sk_tree] * num_motions, gender_betas=[torch.zeros(17)] * num_motions, limb_weights=[np.zeros(10)] * num_motions, random_sample=False)

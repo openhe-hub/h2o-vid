@@ -1,133 +1,3 @@
-
-
-# import numpy as np
-# import os
-# import yaml
-# from tqdm import tqdm
-# import os.path as osp
-
-# from phc.utils import torch_utils
-# import joblib
-# import torch
-# import torch.multiprocessing as mp
-# import copy
-# import gc
-# from phc.smpllib.smpl_parser import (
-#     SMPL_Parser,
-#     SMPLH_Parser,
-#     SMPLX_Parser,
-# )
-# from scipy.spatial.transform import Rotation as sRot
-# import random
-# from phc.utils.flags import flags
-# from phc.utils.motion_lib_base import MotionLibBase, DeviceCache, compute_motion_dof_vels, FixHeightMode
-# from phc.utils.torch_h1_humanoid_batch import Humanoid_Batch
-# from easydict import EasyDict
-
-# def to_torch(tensor):
-#     if torch.is_tensor(tensor):
-#         return tensor
-#     else:
-#         return torch.from_numpy(tensor)
-
-
-
-# USE_CACHE = False
-# print("MOVING MOTION DATA TO GPU, USING CACHE:", USE_CACHE)
-
-# if not USE_CACHE:
-#     old_numpy = torch.Tensor.numpy
-    
-#     class Patch:
-
-#         def numpy(self):
-#             if self.is_cuda:
-#                 return self.to("cpu").numpy()
-#             else:
-#                 return old_numpy(self)
-
-#     torch.Tensor.numpy = Patch.numpy
-
-
-# class MotionLibH1(MotionLibBase):
-
-#     def __init__(self, motion_file, device, fix_height=FixHeightMode.no_fix, masterfoot_conifg=None, min_length=-1, im_eval=False, multi_thread=True, mjcf_file=""):
-#         super().__init__(motion_file=motion_file, device=device, fix_height=fix_height, masterfoot_conifg=masterfoot_conifg, min_length=min_length, im_eval=im_eval, multi_thread=multi_thread)
-#         self.mesh_parsers = Humanoid_Batch(mjcf_file=mjcf_file, extend_hand = False)
-#         return
-    
-    
-    
-#     @staticmethod
-#     def fix_trans_height(pose_aa, trans, curr_gender_betas, mesh_parsers, fix_height_mode):
-#         if fix_height_mode == FixHeightMode.no_fix:
-#             return trans, 0
-        
-#         with torch.no_grad():
-#             raise NotImplementedError("Fix height is not implemented for H1")
-#             return trans, diff_fix
-
-#     @staticmethod
-#     def load_motion_with_skeleton(ids, motion_data_list, skeleton_trees, gender_betas, fix_height, mesh_parsers, masterfoot_config, target_heading,  max_len, queue, pid):
-#         # ZL: loading motion with the specified skeleton. Perfoming forward kinematics to get the joint positions
-#         np.random.seed(np.random.randint(5000)* pid)
-#         res = {}
-#         assert (len(ids) == len(motion_data_list))
-#         for f in range(len(motion_data_list)):
-#             curr_id = ids[f]  # id for this datasample
-#             curr_file = motion_data_list[f]
-#             if not isinstance(curr_file, dict) and osp.isfile(curr_file):
-#                 key = motion_data_list[f].split("/")[-1].split(".")[0]
-#                 curr_file = joblib.load(curr_file)[key]
-
-#             seq_len = curr_file['root_trans_offset'].shape[0]
-#             if max_len == -1 or seq_len < max_len:
-#                 start, end = 0, seq_len
-#             else:
-#                 start = random.randint(0, seq_len - max_len)
-#                 end = start + max_len
-
-#             trans = to_torch(curr_file['root_trans_offset']).clone()[start:end]
-#             pose_aa = to_torch(curr_file['pose_aa'][start:end])
-
-#             B, J, N = pose_aa.shape
-            
-#             if not target_heading is None:
-#                 start_root_rot = sRot.from_rotvec(pose_aa[0, 0])
-#                 heading_inv_rot = sRot.from_quat(torch_utils.calc_heading_quat_inv(torch.from_numpy(start_root_rot.as_quat()[None, ])))
-#                 heading_delta = sRot.from_quat(target_heading) * heading_inv_rot 
-#                 pose_aa[:, 0] = torch.tensor((heading_delta * sRot.from_rotvec(pose_aa[:, 0])).as_rotvec())
-#                 trans = torch.matmul(trans, torch.from_numpy(heading_delta.as_matrix().squeeze().T))
-
-#             ##### ZL: randomize the heading ######
-#             # if (not flags.im_eval) and (not flags.test):
-#             #     # if True:
-#             #     random_rot = np.zeros(3)
-#             #     random_rot[2] = np.pi * (2 * np.random.random() - 1.0)
-#             #     random_heading_rot = sRot.from_euler("xyz", random_rot)
-#             #     pose_aa = pose_aa.reshape(B, -1)
-#             #     pose_aa[:, :3] = torch.tensor((random_heading_rot * sRot.from_rotvec(pose_aa[:, :3])).as_rotvec())
-#             #     trans = torch.matmul(trans, torch.from_numpy(random_heading_rot.as_matrix().squeeze().T))
-#             ##### ZL: randomize the heading ######
-
-#             # trans, trans_fix = MotionLibSMPL.fix_trans_height(pose_aa, trans, curr_gender_beta, mesh_parsers, fix_height_mode = fix_height)
-           
-#             curr_motion = mesh_parsers.fk_batch(pose_aa[None, ], trans[None, ], return_full= True)
-#             curr_motion = EasyDict({k: v.squeeze() if torch.is_tensor(v) else v for k, v in curr_motion.items() })
-            
-            
-#             res[curr_id] = (curr_file, curr_motion)
-            
-#         if not queue is None:
-#             queue.put(res)
-#         else:
-#             return res
-
-
-    
-
-
-
 import numpy as np
 import os
 import yaml
@@ -158,8 +28,6 @@ def to_torch(tensor):
     else:
         return torch.from_numpy(tensor)
 
-
-
 USE_CACHE = False
 print("MOVING MOTION DATA TO GPU, USING CACHE:", USE_CACHE)
 
@@ -182,6 +50,8 @@ class MotionLibH1Video(MotionLibBase):
     def __init__(self, motion_file, device, fix_height=FixHeightMode.no_fix, masterfoot_conifg=None, min_length=-1, im_eval=False, multi_thread=True, extend_hand = True, extend_head = False, mjcf_file="resources/robots/h1/h1.xml", sim_timestep = 1/50):
         super().__init__(motion_file=motion_file, device=device, fix_height=fix_height, masterfoot_conifg=masterfoot_conifg, min_length=min_length, im_eval=im_eval, multi_thread=multi_thread, sim_timestep = sim_timestep)
         self.mesh_parsers = Humanoid_Batch(extend_hand = extend_hand, extend_head = extend_head, mjcf_file=mjcf_file)
+        self.fix_quat = None
+        self.fix_z_direction = 2.0 
         return
     
     @staticmethod
@@ -468,8 +338,54 @@ class MotionLibH1Video(MotionLibBase):
             "motion_bodies": self._motion_bodies[motion_ids],
             "motion_limb_weights": self._motion_limb_weights[motion_ids],
         })
+        return_dict = self.fix_video_pose(return_dict)
         return return_dict
+    
+    def fix_video_pose(self, state_dict: dict):
+        def quat_inv(q):
+            return torch.tensor([-q[0], -q[1], -q[2], q[3]])
+    
+        def quat_mul(q1, q2):
+            x1, y1, z1, w1 = q1
+            x2, y2, z2, w2 = q2
+            return torch.tensor([
+                w1*x2 + x1*w2 + y1*z2 - z1*y2,  
+                w1*y2 - x1*z2 + y1*w2 + z1*x2,  
+                w1*z2 + x1*y2 - y1*x2 + z1*w2,  
+                w1*w2 - x1*x2 - y1*y2 - z1*z2   
+            ])
         
+        def quat_rotate(q, v):
+            q_conj = quat_inv(q)
+            v_quat = torch.tensor([v[0], v[1], v[2], 0.0]) 
+            v_rotated = quat_mul(quat_mul(q, v_quat), q_conj)
+            return v_rotated[:3]  
+        
+        def axis_angle_to_quat(axis, angle_rad):
+            axis = torch.tensor(axis, dtype=torch.float32)
+            axis = axis / axis.norm()
+            half_angle = angle_rad / 2
+            sin_half = torch.sin(half_angle)
+            cos_half = torch.cos(half_angle)
+            xyz = axis * sin_half
+            return torch.cat([xyz, cos_half.unsqueeze(0)]) 
+        
+        if self.fix_quat is None:
+            self.fix_quat = quat_inv(state_dict["root_rot"][0])
+            print(self.fix_quat)
+            
+        state_dict["root_rot"][0] = quat_mul(self.fix_quat, state_dict["root_rot"][0])
+        state_dict["root_pos"][0] = quat_rotate(self.fix_quat, state_dict["root_pos"][0])
+        state_dict["root_vel"][0] = quat_rotate(self.fix_quat, state_dict["root_vel"][0])
+        state_dict["root_ang_vel"][0] = quat_rotate(self.fix_quat,state_dict["root_ang_vel"][0])
+        for i in range(len(state_dict["rg_pos"][0])):
+            state_dict["rg_pos"][0][i] = quat_rotate(self.fix_quat, state_dict["rg_pos"][0][i])
+            state_dict["rg_pos"][0][i][-1] += self.fix_z_direction
+        
+        state_dict["root_pos"][0][-1] += self.fix_z_direction
+        
+        return state_dict
+    
     @staticmethod
     def load_motion_with_skeleton(ids, motion_data_list, skeleton_trees, gender_betas, fix_height, mesh_parsers, masterfoot_config,  target_heading, max_len, queue, pid):
         # ZL: loading motion with the specified skeleton. Perfoming forward kinematics to get the joint positions
