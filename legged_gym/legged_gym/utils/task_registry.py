@@ -14,6 +14,10 @@ from legged_gym import LEGGED_GYM_ROOT_DIR, LEGGED_GYM_ENVS_DIR
 from .helpers import get_args, update_cfg_from_args, class_to_dict, get_load_path, set_seed, parse_sim_params, parse_sim_params_hydra
 from legged_gym.envs.base.legged_robot_config import LeggedRobotCfg, LeggedRobotCfgPPO
 
+from loguru import logger
+
+import pdb
+
 class TaskRegistry():
     def __init__(self):
         self.task_classes = {}
@@ -92,6 +96,7 @@ class TaskRegistry():
         # if no args passed get command line arguments
         if name in self.task_classes:
             task_class = self.get_task_class(name)
+            # logger.debug(f"task class = {task_class}")
         else:
             raise ValueError(f"Task with name: {name} was not registered")
         if env_cfg is None:
@@ -104,7 +109,7 @@ class TaskRegistry():
         # parse sim params (convert to dict fiwhererst)
         sim_params = {"sim": class_to_dict(env_cfg.sim)}
         sim_params = parse_sim_params(hydra_cfg, sim_params)
-        
+        # pdb.set_trace()
         env = task_class(   cfg=env_cfg,
                             sim_params=sim_params,
                             physics_engine=gymapi.SIM_PHYSX,
@@ -155,11 +160,16 @@ class TaskRegistry():
             log_dir = os.path.join(log_root, datetime.now().strftime('%y_%m_%d_%H-%M-%S') + '_' + train_cfg.runner.run_name)
         
         train_cfg_dict = class_to_dict(train_cfg)
-        # runner = OnPolicyRunner(env, train_cfg_dict, log_dir, device=args.rl_device
         
+        logger.debug(f"train cfg dict = {train_cfg_dict}")
+        
+        # runner = OnPolicyRunner(env, train_cfg_dict, log_dir, device=args.rl_device
         runner = OnPolicyRunner(env, train_cfg_dict, log_dir, device=args.sim_device)
+        
         #save resume path before creating a new log_dir
         resume = train_cfg.runner.resume
+        logger.debug(f"resume = {resume}")
+
         if resume:
             # load previously trained model
             resume_path = get_load_path(log_root, load_run=train_cfg.runner.load_run, checkpoint=train_cfg.runner.checkpoint)

@@ -15,7 +15,7 @@ from omegaconf import DictConfig, OmegaConf
 from easydict import EasyDict
 from legged_gym.utils.helpers import class_to_dict
 
-from loguru import logger as loguru_logger
+# from loguru import logger as loguru_logger
 
 NOROSPY = False
 try:

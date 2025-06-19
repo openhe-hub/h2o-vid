@@ -35,6 +35,10 @@ from legged_gym.utils import  task_registry
 from phc.learning.network_loader import load_mlp
 from typing import OrderedDict
 import torch.optim as optim
+from loguru import logger
+
+import pdb
+
 class LeggedRobot(BaseTask):
     def __init__(self, cfg: LeggedRobotCfg, sim_params, physics_engine, sim_device, headless):
         """ Parses the provided config file,
@@ -56,6 +60,8 @@ class LeggedRobot(BaseTask):
         self.init_done = False
         self._parse_cfg(self.cfg)
         self.self_obs_size = 0
+        
+        # pdb.set_trace()
         super().__init__(self.cfg, sim_params, physics_engine, sim_device, headless)
 
         if not self.headless:
@@ -106,6 +112,7 @@ class LeggedRobot(BaseTask):
         self.num_compute_average_epl = self.cfg.rewards.num_compute_average_epl
         self.average_episode_length = 0. # num_compute_average_epl last termination episode length
 
+        # pdb.set_trace()
         self.reset_idx(torch.arange(self.num_envs).to(self.device))
         self.compute_observations() # compute initial obs vuffer. 
         self.start_idx = 0
@@ -182,7 +189,6 @@ class LeggedRobot(BaseTask):
                 self.kin_dict['gt_action'] = gt_actions.clone()
 
 
-
         clip_actions = self.cfg.normalization.clip_actions
         
         self.actions = torch.clip(actions, -clip_actions, clip_actions).to(self.device)
@@ -199,8 +205,8 @@ class LeggedRobot(BaseTask):
         else:
             actions = actions.clone()
 
-
         self.render()
+
         # self.actions = actions.clone()
         for _ in range(self.cfg.control.decimation):
             self.torques = self._compute_torques(actions).view(self.torques.shape)
@@ -333,7 +339,7 @@ class LeggedRobot(BaseTask):
         self.base_ang_vel[:] = quat_rotate_inverse(self._rigid_body_rot[:, 11, :], self._rigid_body_ang_vel[:, 11, :])
         
 
-        self.projected_gravity[:] = quat_rotate_inverse(self._rigid_body_rot[:, 11, :], self.clear)
+        self.projected_gravity[:] = quat_rotate_inverse(self._rigid_body_rot[:, 11, :], self.gravity_vec)
 
         self._post_physics_step_callback()
         # compute observations, rewards, resets, ...
@@ -1737,6 +1743,7 @@ class LeggedRobot(BaseTask):
         """ Creates simulation, terrain and evironments
         """
         self.up_axis_idx = 2 # 2 for z, 1 for y -> adapt gravity accordingly
+        # pdb.set_trace()
         self.sim = self.gym.create_sim(self.sim_device_id, self.graphics_device_id, self.physics_engine, self.sim_params)
         mesh_type = self.cfg.terrain.mesh_type
         if mesh_type in ['heightfield', 'trimesh']:
@@ -2977,6 +2984,7 @@ class LeggedRobot(BaseTask):
         asset_options.disable_gravity = self.cfg.asset.disable_gravity
         asset_options.default_dof_drive_mode = gymapi.DOF_MODE_NONE
         
+        # pdb.set_trace()
         robot_asset = self.gym.load_asset(self.sim, asset_root, asset_file, asset_options)
         self.num_dof = self.gym.get_asset_dof_count(robot_asset)
         self.num_bodies = self.gym.get_asset_rigid_body_count(robot_asset)

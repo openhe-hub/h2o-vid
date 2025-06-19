@@ -25,6 +25,7 @@ from phc.utils.motion_lib_h1 import MotionLibH1
 from smpl_sim.poselib.skeleton.skeleton3d import SkeletonTree
 from phc.utils.flags import flags
 
+from scipy.spatial.transform import Rotation as R
 
 flags.test = True
 flags.im_eval = True
@@ -52,7 +53,7 @@ asset_descriptors = [
 ]
 sk_tree = SkeletonTree.from_mjcf(h1_xml)
 
-motion_file = "data/h1/test.pkl"
+motion_file = "data/h1/IMG_9730.pkl"
 if os.path.exists(motion_file):
     print(f"loading {motion_file}")
 else:
@@ -156,8 +157,8 @@ for i in range(num_envs):
 
     # add actor
     pose = gymapi.Transform()
-    pose.p = gymapi.Vec3(0.0, 0, 0.0)
-    pose.r = gymapi.Quat(0, 0.0, 0.0, 1)
+    pose.p = gymapi.Vec3(0.0, 0.0, 0.0)
+    pose.r = gymapi.Quat(0.0, 0.0, 0.0, 1)
 
     actor_handle = gym.create_actor(env, asset, pose, "actor", i, 1)
     actor_handles.append(actor_handle)
@@ -215,8 +216,8 @@ num_spheres = 19
 init_positions = gymapi.Vec3(0.0, 0.0, 0.0)
 spacing = 0.
 
-
-
+# FIXME
+init_root_quat = None # torch.tensor([[1.0, 0.0, 0.0, 0.0]], device='cuda:0')
 
 
 while not gym.query_viewer_has_closed(viewer):
@@ -235,14 +236,58 @@ while not gym.query_viewer_has_closed(viewer):
     if args.show_axis:
         gym.clear_lines(viewer)
         
+    ########################
+    def quat_inv(q):
+        return torch.tensor([-q[0], -q[1], -q[2], q[3]])
+    
+    def quat_mul(q1, q2):
+        x1, y1, z1, w1 = q1
+        x2, y2, z2, w2 = q2
+        return torch.tensor([
+            w1*x2 + x1*w2 + y1*z2 - z1*y2,  
+            w1*y2 - x1*z2 + y1*w2 + z1*x2,  
+            w1*z2 + x1*y2 - y1*x2 + z1*w2,  
+            w1*w2 - x1*x2 - y1*y2 - z1*z2   
+        ])
+    
+    def quat_rotate(q, v):
+        q_conj = quat_inv(q)
+        v_quat = torch.tensor([v[0], v[1], v[2], 0.0]) 
+        v_rotated = quat_mul(quat_mul(q, v_quat), q_conj)
+        return v_rotated[:3]  
+    
+    def axis_angle_to_quat(axis, angle_rad):
+        axis = torch.tensor(axis, dtype=torch.float32)
+        axis = axis / axis.norm()
+        half_angle = angle_rad / 2
+        sin_half = torch.sin(half_angle)
+        cos_half = torch.cos(half_angle)
+        xyz = axis * sin_half
+        return torch.cat([xyz, cos_half.unsqueeze(0)])  
+    
+    if init_root_quat is None:
+        init_root_quat = quat_inv(root_rot[0])
+    
+    # quat_trans0 = init_root_quat
+    # root_rot[0] = quat_mul(quat_trans0, root_rot[0])
+    # root_pos[0] = quat_rotate(quat_trans0, root_pos[0])
+    # root_vel[0] = quat_rotate(quat_trans0,root_vel[0])
+    # root_ang_vel[0] = quat_rotate(quat_trans0,root_ang_vel[0])
+    
+    # root_pos[0][-1] += 2
+    
+    print(root_pos[0].numpy())
+    # print(root_rot[0].numpy())
+    ########################  
+        
     gym.clear_lines(viewer)
     gym.refresh_rigid_body_state_tensor(sim)
     # import pdb; pdb.set_trace()
-    idx = 0
-    for pos_joint in rb_pos[0, 1:]: # idx 0 torso (duplicate with 11)
-        sphere_geom2 = gymutil.WireframeSphereGeometry(0.1, 4, 4, None, color=(1, 0.0, 0.0))
-        sphere_pose = gymapi.Transform(gymapi.Vec3(pos_joint[0], pos_joint[1], pos_joint[2]), r=None)
-        gymutil.draw_lines(sphere_geom2, gym, viewer, envs[0], sphere_pose) 
+    # idx = 0
+    # for pos_joint in rb_pos[0, 1:]: # idx 0 torso (duplicate with 11)
+    #     sphere_geom2 = gymutil.WireframeSphereGeometry(0.1, 4, 4, None, color=(1, 0.0, 0.0))
+    #     sphere_pose = gymapi.Transform(gymapi.Vec3(pos_joint[0], pos_joint[1], pos_joint[2]), r=None)
+    #     gymutil.draw_lines(sphere_geom2, gym, viewer, envs[0], sphere_pose) 
     # import pdb; pdb.set_trace()
         
     # out = motion_lib.mesh_parsers.forward_kinematics_batch(pose_aa, root_rot, root_pos)

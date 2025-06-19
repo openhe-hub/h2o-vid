@@ -5,6 +5,10 @@ from isaacgym import gymutil
 import numpy as np
 import torch
 
+from loguru import logger
+
+import pdb
+
 # Base class for RL tasks
 class BaseTask():
 
@@ -33,6 +37,8 @@ class BaseTask():
         self.num_obs = cfg.env.num_observations
         self.num_privileged_obs = cfg.env.num_privileged_obs
         self.num_actions = cfg.env.num_actions
+        
+        logger.debug(f"{self.num_envs}")
 
         # optimization flags for pytorch JIT
         torch._C._jit_set_profiling_mode(False)
@@ -52,7 +58,8 @@ class BaseTask():
             # self.num_privileged_obs = self.num_obs
 
         self.extras = {}
-        # create envs, sim and viewer
+        # create envs, sim and 
+        # pdb.set_trace()
         self.create_sim()
         self.gym.prepare_sim(self.sim)
 
@@ -81,10 +88,15 @@ class BaseTask():
         raise NotImplementedError
 
     def reset(self):
+        # logger.debug("enter legged_gym.reset()")
         """ Reset all robots"""
+        # logger.debug("before reset index")
         self.reset_idx(torch.arange(self.num_envs, device=self.device))
+        # logger.debug("after reset index")
         
+        # logger.debug("before step")
         obs, privileged_obs, _, _, _ = self.step(torch.zeros(self.num_envs, self.num_actions, device=self.device, requires_grad=False))
+        # logger.debug("after step")
         # self.gym.refresh_actor_root_state_tensor(self.sim)
         # self.gym.refresh_net_contact_force_tensor(self.sim)
         # self.gym.refresh_rigid_body_state_tensor(self.sim)

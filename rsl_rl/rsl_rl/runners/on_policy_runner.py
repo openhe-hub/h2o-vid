@@ -53,6 +53,8 @@ from phc.smpllib.smpl_eval import compute_metrics_lite
 import gc
 import joblib
 
+from loguru import logger
+
 class OnPolicyRunner:
 
     def __init__(self,
@@ -77,7 +79,7 @@ class OnPolicyRunner:
         actor_critic_class = eval(self.cfg["policy_class_name"]) # ActorCritic
 
         self.policy_cfg['self_obs_size'] = self.env.self_obs_size
-        
+
         actor_critic: ActorCritic = actor_critic_class( self.env.num_obs,
                                                         num_critic_obs,
                                                         self.env.num_actions,
@@ -86,6 +88,7 @@ class OnPolicyRunner:
         alg_class = eval(self.cfg["algorithm_class_name"]) # PPO
         
         self.alg: PPO = alg_class(actor_critic, device=self.device, **self.alg_cfg)
+
         self.num_steps_per_env = self.cfg["num_steps_per_env"]
         self.save_interval = self.cfg["save_interval"]
         
@@ -95,7 +98,6 @@ class OnPolicyRunner:
             self.alg.init_storage(self.env.num_envs, self.num_steps_per_env, [self.env.num_obs], [self.env.num_privileged_obs], [self.env.num_actions], self.kin_dict_info)
         else:
             self.alg.init_storage(self.env.num_envs, self.num_steps_per_env, [self.env.num_obs], [self.env.num_privileged_obs], [self.env.num_actions], None)
-
         # Log
         self.log_dir = log_dir
         self.writer = None
@@ -103,8 +105,11 @@ class OnPolicyRunner:
         self.tot_time = 0
         self.current_learning_iteration = 0
         
-        
+        logger.debug("==>")
+        logger.debug(type(self.env))
         _, _ = self.env.reset()
+        self.env.reset()
+        logger.debug("<==")
     
     def learn(self, num_learning_iterations, init_at_random_ep_len=False):
         # initialize writer

@@ -24,10 +24,12 @@ import argparse
 
 def load_amass_data(data_path):
     entry_data = dict(np.load(open(data_path, "rb"), allow_pickle=True))
+    
+    # print(entry_data.keys())
 
-    if not 'mocap_framerate' in  entry_data:
+    if not 'mocap_frame_rate' in  entry_data:
         return 
-    framerate = entry_data['mocap_framerate']
+    framerate = entry_data['mocap_frame_rate']
 
 
     root_trans = entry_data['trans']
@@ -101,7 +103,7 @@ if __name__ == "__main__":
     shape_new = shape_new.to(device)
 
 
-    amass_root = args.amass_root
+    amass_root = r'/home/openhe/Workspace/program/python/human2humanoid/data/AMASS/AMASS_Complete' # args.amass_root
     all_pkls = glob.glob(f"{amass_root}/**/*.npz", recursive=True)
     split_len = len(amass_root.split("/"))
     key_name_to_pkls = {"0-" + "_".join(data_path.split("/")[split_len:]).replace(".npz", ""): data_path for data_path in all_pkls}
@@ -112,7 +114,9 @@ if __name__ == "__main__":
     h1_fk = Humanoid_Batch(device = device)
     data_dump = {}
     pbar = tqdm(key_name_to_pkls.keys())
+    cnt = 0
     for data_key in pbar:
+        print(cnt, data_key)
         amass_data = load_amass_data(key_name_to_pkls[data_key])
         skip = int(amass_data['fps']//30)
         trans = torch.from_numpy(amass_data['trans'][::skip]).float().to(device)
@@ -169,9 +173,10 @@ if __name__ == "__main__":
                 }
         
         print(f"dumping {data_key} for testing, remove the line if you want to process all data")
-        import ipdb; ipdb.set_trace()
-        joblib.dump(data_dump, "data/h1/test.pkl")
+        # import ipdb; ipdb.set_trace()
+        joblib.dump(data_dump, "data/h1/test.pkl") 
+        cnt += 1
     
         
-    import ipdb; ipdb.set_trace()
-    joblib.dump(data_dump, "data/h1/amass_all.pkl")
+    # import ipdb; ipdb.set_trace()
+    joblib.dump(data_dump, "data/h1/dance_db.pkl")
